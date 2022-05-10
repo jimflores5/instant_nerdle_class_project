@@ -20,6 +20,25 @@ def evaluate_equation(equa_str):
 
     return parts[0] == parts[2]
 
+def evaluate_reverse(equa_str):
+    parts = equa_str.split(' ')
+    for index in range(len(parts)):
+        if parts[index].isdigit():
+            parts[index] = int(parts[index])
+    parts.reverse()
+    print(parts)
+    while len(parts) > 3:
+        if parts[3] == '*':
+            parts[2:5] = [parts[2] * parts[4]]
+        elif parts[3] == '/':
+            parts[2:5] = [parts[2] / parts[4]]
+        elif parts[3] == '+':
+            parts[2:5] = [parts[2] + parts[4]]
+        elif parts[3] == '-':
+            parts[2:5] = [parts[2] - parts[4]]
+
+    return parts[0] == parts[2] or parts[0] == -parts[2]
+
 def parse_raw_data(entry):
     ops = []
     nums = []
@@ -76,7 +95,7 @@ def place_ops(formats, ops, known):
         equation = ''
         op_index = 0
         for index in range(8):
-            if index == known[0]:
+            if index == known[0] and known[1].isdigit():
                 equation += known[1]
             elif index in format:
                 equation += ops[op_index]
@@ -94,6 +113,7 @@ def build_op_dict(ops, known):
         nix_this_position = known[0]
     else:
         nix_this_position = 0
+        
     if len(ops) == 2:
         for option in formats_2_ops:
             if nix_this_position not in option:
@@ -123,9 +143,8 @@ def main():
     raw_str = '13+/958='
     correct_ans = '18 / 9 + 3 = 5'
     known_spot = (0, '1')
-    other_str = '=5+89/34'
-    other_ans = '45 / 9 + 3 = 8'
-    other_known = (1, '5')
+    other_str = '7*6-143='
+    other_known = (5, '4')
 
     operations, digits = parse_raw_data(other_str)
     options = build_op_dict(operations, other_known)
@@ -137,6 +156,15 @@ def main():
             temp = build_equation(equation, order.copy())
             if evaluate_equation(temp):
                 solution = temp
+    if solution == '':
+        operations[0], operations[1] = operations[1], operations[0]
+        equations = place_ops(options.copy(), operations.copy(), other_known)
+        for equation in equations.values():
+            for order in orders:
+                temp = build_equation(equation, order.copy())
+                print(temp, evaluate_reverse(temp))
+                if evaluate_reverse(temp):
+                    solution = temp
     print(f"{other_str} ---> {solution}")
     print('---')
     operations, digits = parse_raw_data(raw_str)
