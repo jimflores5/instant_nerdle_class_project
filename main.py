@@ -2,19 +2,32 @@ import math
 import random
 import copy
 
-def evaluate_equation(equa_str):
+def evaluate_equation(equa_str): # Accepts a string that expresses the equation to solve.
+    # Split the equation into a list. Each element is either a number of an operation.
     parts = equa_str.split(' ')
+    
+    # The last entry in the list represents the answer to the equation.
+    # We need to see if the equation produces this answer!
+
+    # Iterate through the list and convert string numbers to integers.
     for index in range(len(parts)):
         if parts[index].isdigit():
             parts[index] = int(parts[index])
 
-    while len(parts) > 3:
+    # Solve the equation by following the order of operations.
+    while len(parts) > 3: # A 3-item list consists of two values to compare and the '=' sign, like [value_1, '=', value_2].
+        # Check for * and / operators, as these need to be solved first.
         if '*' in parts:
+            # Return the index for the operation.
             op_index = parts.index('*')
         elif '/' in parts:
             op_index = parts.index('/')
         else:
+            # If no * or /, then either + or - will be at index 1.
             op_index = 1
+
+        # Combine the numbers on either side of the operator, then use
+        # a slice to replace the 3 elements with the resulting value.
         if parts[op_index] == '*':
             parts[op_index-1:op_index+2] = [parts[op_index-1] * parts[op_index+1]]
         elif parts[op_index] == '/':
@@ -23,30 +36,25 @@ def evaluate_equation(equa_str):
             parts[op_index-1:op_index+2] = [parts[op_index-1] + parts[op_index+1]]
         elif parts[op_index] == '-':
             parts[op_index-1:op_index+2] = [parts[op_index-1] - parts[op_index+1]]
+    
+    # Compare the two values and return True or False.
     return parts[0] == parts[2]
 
 def parse_raw_data(entry):
+    # This function takes in the 8 raw characters from the puzzle and separates
+    # the string into a list of the operators (+-*/=) and single digits.
     ops = []
     nums = []
     for char in entry:
         if char in '+-*/=':
             ops.append(char)
         else:
-            nums.append(int(char))
+            nums.append(char)
     ops.sort()
     nums.sort()
     return ops.copy(), nums.copy()
     
 def build_equation(template, digits):
-    # No operator can go in position 1 or 8 (index 0 or 7).
-    # The '=' sign must be to the right of all other operators.
-    # 2 operators cannot be next to each other in the string.
-    # For 3 operators (counting '='), acceptable postions include
-    # (2, 4, 6), (2, 4, 7), (2, 5, 7), (3, 5, 7).
-    # Index values (1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6).
-    # For 2 operators, acceptable positions include
-    # (2, 6), (3, 6), (4, 6), (4, 7), (2, 5), (3, 5).
-    # Index values (1, 5), (2, 5), (3, 5), (3, 6), (1, 4), (2, 4).
     equation = ''
     for char in template:
         if char == 'X':
@@ -60,36 +68,51 @@ def build_equation(template, digits):
             equation = equation.replace(char, ' ' + char + ' ')
     return equation
 
-def place_ops(formats, ops, known):
-    for format in formats:
+def place_ops(positions, ops, known):
+    for entry in positions:
         equation = ''
         op_index = 0
         for index in range(8):
             if index == known[0] and known[1].isdigit():
                 equation += known[1]
-            elif index in format:
+            elif index in entry:
                 equation += ops[op_index]
                 op_index += 1
             else:
                 equation += 'X'
-        formats[format] = equation
-    return formats.copy()
+        positions[entry] = equation
+    return positions.copy()
 
 def build_op_dict(ops, known):
-    formats_3_ops = [(1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6)]
-    formats_2_ops = [(1, 5), (2, 5), (3, 5), (3, 6), (1, 4), (2, 4)]
+    # This function identifies the possible operator positions and assigns them as keys in a dictionary.
+    # The 8 positions in the Nerdle equation have index values 0 - 7.
+    # No operator can go in position 0 or 7.
+    # The '=' sign must be to the right of all other operators.
+    # 2 operators cannot be next to each other.
+    # For 3 operators (counting '='), possible postions include index
+    # values of (1, 3, 5), (1, 3, 6), (1, 4, 6), and (2, 4, 6).
+    # For 2 operators, acceptable positions include index values of
+    # (1, 5), (2, 5), (3, 5), (3, 6), (1, 4), and (2, 4).
+    positions_3_ops = [(1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6)]
+    positions_2_ops = [(1, 5), (2, 5), (3, 5), (3, 6), (1, 4), (2, 4)]
     op_options = {}
+
     if known[1] not in '+-*/=':
+        # If the known charater is a digit, then its position may
+        # remove one or more of the possible operator placements.
         nix_this_position = known[0]
     else:
         nix_this_position = 0
         
     if len(ops) == 2:
-        for option in formats_2_ops:
+        # Build a dictionary using the entries of positions_2_ops as keys.
+        for option in positions_2_ops:
             if nix_this_position not in option:
+                # Assign the empty string to each key.
                 op_options[option] = ''
     else:
-        for option in formats_3_ops:
+        # Build a dictionary using the entries of positions_3_ops as keys.
+        for option in positions_3_ops:
             if nix_this_position not in option:
                 op_options[option] = ''
     return op_options.copy()
@@ -143,20 +166,37 @@ def check_options(equations, orders):
     return soln
 
 def main():
+    # Prompt the user to enter the Nerdle puzzle and the correctly placed character.
     raw_str, correct_char = query_user()
     # raw_str = '9=47+/21'
     # correct_char = '7'
+    # Assign the index and identity of the correctly placed character.
     known_spot = (raw_str.index(correct_char), correct_char)
 
+    # Extract the operators and digits from the Nerdle puzzle input.
     operations, digits = parse_raw_data(raw_str)
+
+    # Identify all possible arrangements for the operators.
     options = build_op_dict(operations, known_spot)
-    equations = place_ops(options.copy(), operations.copy(), known_spot)
+
+    # Construct templates for the possible equations.
+    templates = place_ops(options.copy(), operations.copy(), known_spot)
+
+    # Identify all possible left-to-right orders for the digits in the equation.
     orders = make_digit_orders(digits, known_spot)
-    solution = check_options(equations, orders)
+
+    # Fill the digits into each template and evaluate each equation.
+    solution = check_options(templates, orders)
+
+    # When the equation has 2 operators besides '=', one is arbitrarily
+    # placed first. If this arrangement doesn't generate a solution,
+    # flip the 2 operators and try again.
     if solution == '':
         operations[0], operations[1] = operations[1], operations[0]
-        equations = place_ops(options.copy(), operations.copy(), known_spot)
-        solution = check_options(equations, orders)
+        templates = place_ops(options.copy(), operations.copy(), known_spot)
+        solution = check_options(templates, orders)
+    
+    # Display the original puzzle and the solution!
     print(f"{raw_str} ---> {solution}")
 
 if __name__ == '__main__':
