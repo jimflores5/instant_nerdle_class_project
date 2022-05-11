@@ -1,6 +1,11 @@
+from flask import Flask, render_template, request, redirect
+
 import math
 import random
 import copy
+
+app = Flask(__name__)
+app.config['DEBUG'] = True
 
 def evaluate_equation(equa_str):
     parts = equa_str.split(' ')
@@ -109,30 +114,6 @@ def make_digit_orders(digits, known):
     orders.sort()
     return copy.deepcopy(orders)
 
-def query_user():
-    num_errors = 8
-    while num_errors > 0:
-        raw_data = input("Enter Instant Nerdle characters: ")
-        if len(raw_data) != 8:
-            print("You must enter 8 characters.")
-        elif '=' not in raw_data:
-            print("You must include an '=' sign.")
-        elif '+' not in raw_data and '-' not in raw_data and '*' not in raw_data and '/' not in raw_data:
-            print("You must include at least one operation (+, -, *, /).")
-        else:
-            for char in raw_data:
-                if not char.isdigit() and char not in '+-*/=':
-                    print(f"{char} is not a valid character.")
-                    print("Enter only 0 - 9 and '+ - * / =' .")
-                else:
-                    num_errors -= 1
-    valid_char = False
-    while not valid_char:
-        known_char = input("Which character is in the correct spot? ")
-        if known_char in raw_data:
-            valid_char = True
-    return raw_data, known_char
-
 def check_options(equations, orders):
     soln = ''
     for equation in equations.values():
@@ -142,22 +123,61 @@ def check_options(equations, orders):
                 soln = temp
     return soln
 
-def main():
-    raw_str, correct_char = query_user()
-    # raw_str = '9=47+/21'
-    # correct_char = '7'
-    known_spot = (raw_str.index(correct_char), correct_char)
+def validate_entry(position, entries):
+    message = ''
+    if position < 0 or position > 7:
+        message = 'Click the radio button under the one known position.'
+        return message
 
-    operations, digits = parse_raw_data(raw_str)
-    options = build_op_dict(operations, known_spot)
-    equations = place_ops(options.copy(), operations.copy(), known_spot)
-    orders = make_digit_orders(digits, known_spot)
-    solution = check_options(equations, orders)
-    if solution == '':
-        operations[0], operations[1] = operations[1], operations[0]
-        equations = place_ops(options.copy(), operations.copy(), known_spot)
-        solution = check_options(equations, orders)
-    print(f"{raw_str} ---> {solution}")
+    if '=' not in entries:
+        message = "You must include an '=' sign."
+    elif '+' not in entries and '-' not in entries and '*' not in entries and '/' not in entries:
+        message = "You must include at least one operation (+, -, *, /)."
+    else:
+        for entry in entries:
+            if not entry.isdigit() and entry not in '+-*/=':
+                message = f"{entry} is not a valid character. Enter only 0 - 9 and '+ - * / =' ."
+
+    return message
+
+@app.route('/', methods = ['GET', 'POST'])
+def main():
+    boxes = []
+    if request.method == 'POST':
+        if request.form['submit'].lower() != 'new_data':
+            return redirect('/')
+        checked = correct_char = int(request.form['known'])
+        for index in range(8):
+            boxes.append(request.form[f"box_{index}"])
+        message = validate_entry(correct_char, boxes)
+        if message == '':
+            raw_str = ''.join(boxes)
+            known_spot = (correct_char, raw_str[correct_char])
+
+            operations, digits = parse_raw_data(raw_str)
+            options = build_op_dict(operations, known_spot)
+            equations = place_ops(options.copy(), operations.copy(), known_spot)
+            orders = make_digit_orders(digits, known_spot)
+            solution = check_options(equations, orders)
+            if solution == '':
+                operations[0], operations[1] = operations[1], operations[0]
+                equations = place_ops(options.copy(), operations.copy(), known_spot)
+                solution = check_options(equations, orders)
+        
+            message = f"{raw_str} ---> {solution}"
+            success = True
+        else:
+            success = False
+        
+    else:
+        message = "Enter today's Instant Nerdle puzzle. Use only the digits 0 - 9 and the operators '+', '-', '*', '/' and '='."
+        for index in range(8):
+            boxes.append('')
+        success = False
+        checked = 0
+    
+    return render_template('index.html', boxes = boxes, message = message,
+        success = success, checked = checked)
 
 if __name__ == '__main__':
-    main()
+    app.run()

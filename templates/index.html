@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width">
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+      <title>Instant Decode</title>
+   </head>
+   <body>
+        <h1>Instant Decode for Instant Nerdle</h1>
+        <form action="/" method="POST"> 
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="row-label">Characters: </td>
+                        {% for index in range(boxes|length) %}
+                            <td><input type="text" name="box_{{index}}" value="{{boxes[index]}}" required/></td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="row-label">Correct placement: </td>
+                        {% for index in range(boxes|length) %}
+                            {% if index == checked %}
+                                <td><input type="radio" name="known" value="{{index}}" checked required/></td>
+                            {% else %}
+                                <td><input type="radio" name="known" value="{{index}}" required/></td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <button name="submit" value="new_data">Submit</button>
+            <input name="submit" type="submit" class="reset" value="Reset">
+        </form>
+        <hr>
+        <section>
+            {% if not success %}
+                <h2 class="message">{{message}}</h2>
+            {% else %}
+                <h2 class="success">{{message}}</h2>
+            {% endif %}
+        </section>
+   </body>
+</html>
