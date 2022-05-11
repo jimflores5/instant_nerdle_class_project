@@ -41,8 +41,8 @@ def evaluate_equation(equa_str): # Accepts a string that expresses the equation 
     return parts[0] == parts[2]
 
 def parse_raw_data(entry):
-    # This function takes in the 8 raw characters from the puzzle and separates
-    # the string into a list of the operators (+-*/=) and single digits.
+    # This function takes the 8 characters from the puzzle and separates
+    # them into a list of the operators (+-*/=) and a list of single digits.
     ops = []
     nums = []
     for char in entry:
@@ -50,22 +50,27 @@ def parse_raw_data(entry):
             ops.append(char)
         else:
             nums.append(char)
-    ops.sort()
-    nums.sort()
+    ops.sort()  # The .sort() places '=' after '+-*/'. (NICE!)
+    nums.sort() # There's no need to sort the digits, but I like to order them.
     return ops.copy(), nums.copy()
     
 def build_equation(template, digits):
+    # 'template' has a form similar to 'X+XX/X=X', where each X holds the
+    # position for a digit. One of these spots may contain a known digit.
+    # The positions and symbols for the operators will vary, but '=' is
+    # always the last operator.
     equation = ''
     for char in template:
         if char == 'X':
             equation += str(digits[0])
             digits.pop(0)
+        elif char in '+-*/=':
+            # The equation will later be split into a list. To make this
+            # easier, add a space on either side of the operators.
+            equation += ' ' + char + ' '
         else:
             equation += char
     
-    for char in equation:
-        if char in '+-*/=':
-            equation = equation.replace(char, ' ' + char + ' ')
     return equation
 
 def place_ops(positions, ops, known):
@@ -156,13 +161,19 @@ def query_user():
             valid_char = True
     return raw_data, known_char
 
-def check_options(equations, orders):
+def check_options(templates, orders):
+    # This function fills digits into the prepared templates and evaluates
+    # each resulting equation.
     soln = ''
-    for equation in equations.values():
+    for template in templates.values():
+        # 'template' is a string with operators but no numbers.
         for order in orders:
-            temp = build_equation(equation, order.copy())
-            if evaluate_equation(temp):
-                soln = temp
+            # Call 'build_equation' to fill in the digits from 'order'.
+            equation = build_equation(template, order.copy())
+
+            # Evaluate the equation and store it if correct.
+            if evaluate_equation(equation):
+                soln = equation
     return soln
 
 def main():
