@@ -7,37 +7,23 @@ def evaluate_equation(equa_str):
     for index in range(len(parts)):
         if parts[index].isdigit():
             parts[index] = int(parts[index])
-    
-    while len(parts) > 3:
-        if parts[1] == '*':
-            parts[0:3] = [parts[0] * parts[2]]
-        elif parts[1] == '/':
-            parts[0:3] = [parts[0] / parts[2]]
-        elif parts[1] == '+':
-            parts[0:3] = [parts[0] + parts[2]]
-        elif parts[1] == '-':
-            parts[0:3] = [parts[0] - parts[2]]
 
+    while len(parts) > 3:
+        if '*' in parts:
+            op_index = parts.index('*')
+        elif '/' in parts:
+            op_index = parts.index('/')
+        else:
+            op_index = 1
+        if parts[op_index] == '*':
+            parts[op_index-1:op_index+2] = [parts[op_index-1] * parts[op_index+1]]
+        elif parts[op_index] == '/':
+            parts[op_index-1:op_index+2] = [parts[op_index-1] / parts[op_index+1]]
+        elif parts[op_index] == '+':
+            parts[op_index-1:op_index+2] = [parts[op_index-1] + parts[op_index+1]]
+        elif parts[op_index] == '-':
+            parts[op_index-1:op_index+2] = [parts[op_index-1] - parts[op_index+1]]
     return parts[0] == parts[2]
-
-def evaluate_reverse(equa_str):
-    parts = equa_str.split(' ')
-    for index in range(len(parts)):
-        if parts[index].isdigit():
-            parts[index] = int(parts[index])
-    parts.reverse()
-    print(parts)
-    while len(parts) > 3:
-        if parts[3] == '*':
-            parts[2:5] = [parts[2] * parts[4]]
-        elif parts[3] == '/':
-            parts[2:5] = [parts[2] / parts[4]]
-        elif parts[3] == '+':
-            parts[2:5] = [parts[2] + parts[4]]
-        elif parts[3] == '-':
-            parts[2:5] = [parts[2] - parts[4]]
-
-    return parts[0] == parts[2] or parts[0] == -parts[2]
 
 def parse_raw_data(entry):
     ops = []
@@ -47,30 +33,14 @@ def parse_raw_data(entry):
             ops.append(char)
         else:
             nums.append(int(char))
-
+    ops.sort()
     nums.sort()
-    ops = sort_ops(ops)
     return ops.copy(), nums.copy()
-
-def sort_ops(operations):
-    ops_order = []
-    if '*' in operations:
-        ops_order.append('*')
-    if '/' in operations:
-        ops_order.append('/')
-    if '+' in operations:
-        ops_order.append('+')
-    if '-' in operations:
-        ops_order.append('-')
-    ops_order.append('=')
-
-    return ops_order.copy()
     
 def build_equation(template, digits):
     # No operator can go in position 1 or 8 (index 0 or 7).
     # The '=' sign must be to the right of all other operators.
     # 2 operators cannot be next to each other in the string.
-    # The operators list is already sorted into the proper order.
     # For 3 operators (counting '='), acceptable postions include
     # (2, 4, 6), (2, 4, 7), (2, 5, 7), (3, 5, 7).
     # Index values (1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6).
@@ -139,43 +109,54 @@ def make_digit_orders(digits, known):
     orders.sort()
     return copy.deepcopy(orders)
 
-def main():
-    raw_str = '13+/958='
-    correct_ans = '18 / 9 + 3 = 5'
-    known_spot = (0, '1')
-    other_str = '7*6-143='
-    other_known = (5, '4')
+def query_user():
+    num_errors = 8
+    while num_errors > 0:
+        raw_data = input("Enter Instant Nerdle characters: ")
+        if len(raw_data) != 8:
+            print("You must enter 8 characters.")
+        elif '=' not in raw_data:
+            print("You must include an '=' sign.")
+        elif '+' not in raw_data and '-' not in raw_data and '*' not in raw_data and '/' not in raw_data:
+            print("You must include at least one operation (+, -, *, /).")
+        else:
+            for char in raw_data:
+                if not char.isdigit() and char not in '+-*/=':
+                    print(f"{char} is not a valid character.")
+                    print("Enter only 0 - 9 and '+ - * / =' .")
+                else:
+                    num_errors -= 1
+    valid_char = False
+    while not valid_char:
+        known_char = input("Which character is in the correct spot? ")
+        if known_char in raw_data:
+            valid_char = True
+    return raw_data, known_char
 
-    operations, digits = parse_raw_data(other_str)
-    options = build_op_dict(operations, other_known)
-    equations = place_ops(options.copy(), operations.copy(), other_known)
-    orders = make_digit_orders(digits, other_known)
-    solution = ''
+def check_options(equations, orders):
+    soln = ''
     for equation in equations.values():
         for order in orders:
             temp = build_equation(equation, order.copy())
             if evaluate_equation(temp):
-                solution = temp
-    if solution == '':
-        operations[0], operations[1] = operations[1], operations[0]
-        equations = place_ops(options.copy(), operations.copy(), other_known)
-        for equation in equations.values():
-            for order in orders:
-                temp = build_equation(equation, order.copy())
-                print(temp, evaluate_reverse(temp))
-                if evaluate_reverse(temp):
-                    solution = temp
-    print(f"{other_str} ---> {solution}")
-    print('---')
+                soln = temp
+    return soln
+
+def main():
+    raw_str, correct_char = query_user()
+    # raw_str = '9=47+/21'
+    # correct_char = '7'
+    known_spot = (raw_str.index(correct_char), correct_char)
+
     operations, digits = parse_raw_data(raw_str)
     options = build_op_dict(operations, known_spot)
     equations = place_ops(options.copy(), operations.copy(), known_spot)
     orders = make_digit_orders(digits, known_spot)
-    for equation in equations.values():
-        for order in orders:
-            temp = build_equation(equation, order.copy())
-            if evaluate_equation(temp):
-                solution = temp
+    solution = check_options(equations, orders)
+    if solution == '':
+        operations[0], operations[1] = operations[1], operations[0]
+        equations = place_ops(options.copy(), operations.copy(), known_spot)
+        solution = check_options(equations, orders)
     print(f"{raw_str} ---> {solution}")
 
 if __name__ == '__main__':
