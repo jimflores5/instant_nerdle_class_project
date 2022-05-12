@@ -2,8 +2,8 @@ import math
 import random
 import copy
 
-def evaluate_equation(equa_str): # Accepts a string that expresses the equation to solve.
-    # Split the equation into a list. Each element is either a number of an operation.
+def evaluate_equation(equa_str): # This function accepts a string of an equation to solve.
+    # Split the equation into a list. Each element is either a number of an operator.
     parts = equa_str.split(' ')
     
     # The last entry in the list represents the answer to the equation.
@@ -16,7 +16,8 @@ def evaluate_equation(equa_str): # Accepts a string that expresses the equation 
 
     # Solve the equation by following the order of operations.
     while len(parts) > 3: # A 3-item list consists of two values to compare and the '=' sign, like [value_1, '=', value_2].
-        # Check for * and / operators, as these need to be solved first.
+        # Check for the * and / operators.
+        # If present, solve those operations first.
         if '*' in parts:
             # Return the index for the operation.
             op_index = parts.index('*')
@@ -30,18 +31,21 @@ def evaluate_equation(equa_str): # Accepts a string that expresses the equation 
         # a slice to replace the 3 elements with the resulting value.
         if parts[op_index] == '*':
             parts[op_index-1:op_index+2] = [parts[op_index-1] * parts[op_index+1]]
-        elif parts[op_index] == '/':
+        elif parts[op_index] == '/' and parts[op_index+1] != 0:
             parts[op_index-1:op_index+2] = [parts[op_index-1] / parts[op_index+1]]
         elif parts[op_index] == '+':
             parts[op_index-1:op_index+2] = [parts[op_index-1] + parts[op_index+1]]
         elif parts[op_index] == '-':
             parts[op_index-1:op_index+2] = [parts[op_index-1] - parts[op_index+1]]
+        else:
+            return False
     
-    # Compare the two values and return True or False.
+    # Compare the result of the equation with the suggested answer, then 
+    # return True or False.
     return parts[0] == parts[2]
 
 def parse_raw_data(entry):
-    # This function takes the 8 characters from the puzzle and separates
+    # This function takes the 8 characters from the puzzle input and separates
     # them into a list of the operators (+-*/=) and a list of single digits.
     ops = []
     nums = []
@@ -50,8 +54,8 @@ def parse_raw_data(entry):
             ops.append(char)
         else:
             nums.append(char)
-    ops.sort()  # The .sort() places '=' after '+-*/'. (NICE!)
-    nums.sort() # There's no need to sort the digits, but I like to order them.
+    ops.sort()  # .sort() places '=' after '+-*/'. (NICE!)
+    nums.sort() # There's no need to sort the digits, but I like to put them in order anyway.
     return ops.copy(), nums.copy()
     
 def build_equation(template, digits):
@@ -62,6 +66,7 @@ def build_equation(template, digits):
     equation = ''
     for char in template:
         if char == 'X':
+            # Replace each 'X' with one of the digits in the puzzle.
             equation += str(digits[0])
             digits.pop(0)
         elif char in '+-*/=':
@@ -73,20 +78,34 @@ def build_equation(template, digits):
     
     return equation
 
-def place_ops(positions, ops, known):
-    for entry in positions:
-        equation = ''
+def place_ops(op_positions, ops, known):
+    # This function assigns string values to each key in the 'op_positions'
+    # ('options') dictionary.
+    # Each string is a template for an equation.
+    # Different templates have the operators at different positions
+    # within the equation string.
+    for entry in op_positions:
+        # Each entry is a collection of operator positions, like (2, 4, 6).
+        template = ''
         op_index = 0
+
+        # Each equation consists of 8 positions.
         for index in range(8):
             if index == known[0] and known[1].isdigit():
-                equation += known[1]
+                # If the known character is a digit, add it to the string.
+                template += known[1]
             elif index in entry:
-                equation += ops[op_index]
+                # If the current position is in the collection, add the
+                # next operator in the ops list to the string.
+                template += ops[op_index]
                 op_index += 1
             else:
-                equation += 'X'
-        positions[entry] = equation
-    return positions.copy()
+                # Otherwise, add X as a placeholder in the equation.
+                template += 'X'
+
+        # Assign the new template to the relevant key in the dictionary.
+        op_positions[entry] = template
+    return op_positions.copy()
 
 def build_op_dict(ops, known):
     # This function identifies the possible operator positions and assigns them as keys in a dictionary.
@@ -123,13 +142,28 @@ def build_op_dict(ops, known):
     return op_options.copy()
 
 def make_digit_orders(digits, known):
+    # Logic and reasoning can be used to identify the correct placement
+    # for some or all of the digits (e.g. x / y must be an integer).
+    # OR...
+    # We can just brute-force the solution by trying all possible
+    # combinations of digits in each tempate.
+    # The number of possibilities is small enough that we don't need to
+    # worry about bogging the program down.
+
+    # 'orders' will be a list of lists. Each entry represents one
+    # left-to-right arrangement of the puzzle digits.
     orders = []
     for digit in digits:
+        # If the known postion holds a number, remove that value from
+        # the digits list.
         if str(digit) == known[1]:
             digits.remove(digit)
     num_digits = len(digits)
-    num_permutations = math.factorial(num_digits)
+    num_permutations = math.factorial(num_digits) # 4 digits can be arranged 24 different ways. 5 digtis = 120 permutations, and 6 gives 720.
     while len(orders) < num_permutations:
+        # Eventually, repeated random shuffles generates all possible
+        # permutations.
+        # I'm not happy with this approach, but it was quick to code.
         temp_list = digits.copy()
         random.shuffle(temp_list)
         if temp_list not in orders:
@@ -138,15 +172,21 @@ def make_digit_orders(digits, known):
     return copy.deepcopy(orders)
 
 def query_user():
+    # This function collects the puzzle characters and the known position
+    # from the user.
     num_errors = 8
     while num_errors > 0:
+        # Collect the 8 characters for the puzzle.
         raw_data = input("Enter Instant Nerdle characters: ")
+
+        # Some basic input validation follows, but there are holes.
+        # Encourage your students to do a better job!
         if len(raw_data) != 8:
             print("You must enter 8 characters.")
-        elif '=' not in raw_data:
-            print("You must include an '=' sign.")
+        elif raw_data.count('=') != 1:
+            print("You must include one '=' sign.")
         elif '+' not in raw_data and '-' not in raw_data and '*' not in raw_data and '/' not in raw_data:
-            print("You must include at least one operation (+, -, *, /).")
+            print("You must include at least one operator (+, -, *, /).")
         else:
             for char in raw_data:
                 if not char.isdigit() and char not in '+-*/=':
@@ -154,14 +194,18 @@ def query_user():
                     print("Enter only 0 - 9 and '+ - * / =' .")
                 else:
                     num_errors -= 1
+    
     valid_char = False
     while not valid_char:
+        # Collect the character known to be in the correct position.
         known_char = input("Which character is in the correct spot? ")
         if known_char in raw_data:
             valid_char = True
+        else:
+            print(f"{known_char} isn't in {raw_data}")
     return raw_data, known_char
 
-def check_options(templates, orders):
+def check_templates(templates, orders):
     # This function fills digits into the prepared templates and evaluates
     # each resulting equation.
     soln = ''
@@ -177,35 +221,36 @@ def check_options(templates, orders):
     return soln
 
 def main():
-    # Prompt the user to enter the Nerdle puzzle and the correctly placed character.
+    # Prompt the user to enter the Nerdle puzzle and to identify the correctly placed character.
     raw_str, correct_char = query_user()
-    # raw_str = '9=47+/21'
+    # For example: '9=47+/21'
     # correct_char = '7'
+
     # Assign the index and identity of the correctly placed character.
     known_spot = (raw_str.index(correct_char), correct_char)
 
     # Extract the operators and digits from the Nerdle puzzle input.
     operations, digits = parse_raw_data(raw_str)
 
-    # Identify all possible arrangements for the operators.
-    options = build_op_dict(operations, known_spot)
+    # Identify all possible positions for the operators.
+    op_placements = build_op_dict(operations, known_spot)
 
     # Construct templates for the possible equations.
-    templates = place_ops(options.copy(), operations.copy(), known_spot)
+    templates = place_ops(op_placements.copy(), operations.copy(), known_spot)
 
-    # Identify all possible left-to-right orders for the digits in the equation.
-    orders = make_digit_orders(digits, known_spot)
+    # Identify all possible left-to-right arrangements of the digits in the puzzle.
+    dig_orders = make_digit_orders(digits, known_spot)
 
-    # Fill the digits into each template and evaluate each equation.
-    solution = check_options(templates, orders)
+    # Place the digits into each template, then evaluate the equations.
+    solution = check_templates(templates, dig_orders)
 
     # When the equation has 2 operators besides '=', one is arbitrarily
     # placed first. If this arrangement doesn't generate a solution,
     # flip the 2 operators and try again.
     if solution == '':
         operations[0], operations[1] = operations[1], operations[0]
-        templates = place_ops(options.copy(), operations.copy(), known_spot)
-        solution = check_options(templates, orders)
+        templates = place_ops(op_placements.copy(), operations.copy(), known_spot)
+        solution = check_templates(templates, dig_orders)
     
     # Display the original puzzle and the solution!
     print(f"{raw_str} ---> {solution}")
