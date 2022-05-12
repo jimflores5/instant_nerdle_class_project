@@ -8,6 +8,7 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 
 def evaluate_equation(equa_str):
+    # See comments in the console-app branch.
     parts = equa_str.split(' ')
     for index in range(len(parts)):
         if parts[index].isdigit():
@@ -20,86 +21,89 @@ def evaluate_equation(equa_str):
             op_index = parts.index('/')
         else:
             op_index = 1
+
         if parts[op_index] == '*':
             parts[op_index-1:op_index+2] = [parts[op_index-1] * parts[op_index+1]]
-        elif parts[op_index] == '/':
+        elif parts[op_index] == '/' and parts[op_index+1] != 0:
             parts[op_index-1:op_index+2] = [parts[op_index-1] / parts[op_index+1]]
         elif parts[op_index] == '+':
             parts[op_index-1:op_index+2] = [parts[op_index-1] + parts[op_index+1]]
         elif parts[op_index] == '-':
             parts[op_index-1:op_index+2] = [parts[op_index-1] - parts[op_index+1]]
+        else:
+            return False
+
     return parts[0] == parts[2]
 
 def parse_raw_data(entry):
+    # See comments in the console-app branch.
     ops = []
     nums = []
     for char in entry:
         if char in '+-*/=':
             ops.append(char)
         else:
-            nums.append(int(char))
+            nums.append(char)
     ops.sort()
     nums.sort()
     return ops.copy(), nums.copy()
     
 def build_equation(template, digits):
-    # No operator can go in position 1 or 8 (index 0 or 7).
-    # The '=' sign must be to the right of all other operators.
-    # 2 operators cannot be next to each other in the string.
-    # For 3 operators (counting '='), acceptable postions include
-    # (2, 4, 6), (2, 4, 7), (2, 5, 7), (3, 5, 7).
-    # Index values (1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6).
-    # For 2 operators, acceptable positions include
-    # (2, 6), (3, 6), (4, 6), (4, 7), (2, 5), (3, 5).
-    # Index values (1, 5), (2, 5), (3, 5), (3, 6), (1, 4), (2, 4).
+    # See comments in the console-app branch.
     equation = ''
     for char in template:
         if char == 'X':
             equation += str(digits[0])
             digits.pop(0)
+        elif char in '+-*/=':
+            equation += ' ' + char + ' '
         else:
             equation += char
     
-    for char in equation:
-        if char in '+-*/=':
-            equation = equation.replace(char, ' ' + char + ' ')
     return equation
 
-def place_ops(formats, ops, known):
-    for format in formats:
-        equation = ''
+
+def place_ops(op_positions, ops, known):
+    # See comments in the console-app branch.
+    for entry in op_positions:
+        template = ''
         op_index = 0
+
         for index in range(8):
             if index == known[0] and known[1].isdigit():
-                equation += known[1]
-            elif index in format:
-                equation += ops[op_index]
+                template += known[1]
+            elif index in entry:
+                template += ops[op_index]
                 op_index += 1
             else:
-                equation += 'X'
-        formats[format] = equation
-    return formats.copy()
+                template += 'X'
+
+        op_positions[entry] = template
+    return op_positions.copy()
 
 def build_op_dict(ops, known):
-    formats_3_ops = [(1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6)]
-    formats_2_ops = [(1, 5), (2, 5), (3, 5), (3, 6), (1, 4), (2, 4)]
+    # See comments in the console-app branch.
+    positions_3_ops = [(1, 3, 5), (1, 3, 6), (1, 4, 6), (2, 4, 6)]
+    positions_2_ops = [(1, 5), (2, 5), (3, 5), (3, 6), (1, 4), (2, 4)]
     op_options = {}
+
     if known[1] not in '+-*/=':
         nix_this_position = known[0]
     else:
         nix_this_position = 0
         
     if len(ops) == 2:
-        for option in formats_2_ops:
+        for option in positions_2_ops:
             if nix_this_position not in option:
                 op_options[option] = ''
     else:
-        for option in formats_3_ops:
+        for option in positions_3_ops:
             if nix_this_position not in option:
                 op_options[option] = ''
     return op_options.copy()
 
 def make_digit_orders(digits, known):
+    # See comments in the console-app branch.
     orders = []
     for digit in digits:
         if str(digit) == known[1]:
@@ -114,23 +118,30 @@ def make_digit_orders(digits, known):
     orders.sort()
     return copy.deepcopy(orders)
 
-def check_options(equations, orders):
+def check_templates(templates, orders):
+    # See comments in the console-app branch.
     soln = ''
-    for equation in equations.values():
+    for template in templates.values():
         for order in orders:
-            temp = build_equation(equation, order.copy())
-            if evaluate_equation(temp):
-                soln = temp
+            equation = build_equation(template, order.copy())
+
+            if evaluate_equation(equation):
+                soln = equation
     return soln
 
 def validate_entry(position, entries):
+    # This function performs some basic input validation, but there are
+    # still holes that could crash the program.
+    # Encourage your students to do a better job!
     message = ''
     if position < 0 or position > 7:
-        message = 'Click the radio button under the one known position.'
+        message = 'Click the radio button under the known, correct character.'
         return message
 
-    if '=' not in entries:
-        message = "You must include an '=' sign."
+    if len(entries) != 8:
+        message = "Enter exactly 8 characters."
+    elif entries.count('=') != 1:
+        message = "Include one '=' sign."
     elif '+' not in entries and '-' not in entries and '*' not in entries and '/' not in entries:
         message = "You must include at least one operation (+, -, *, /)."
     else:
@@ -155,14 +166,14 @@ def main():
             known_spot = (correct_char, raw_str[correct_char])
 
             operations, digits = parse_raw_data(raw_str)
-            options = build_op_dict(operations, known_spot)
-            equations = place_ops(options.copy(), operations.copy(), known_spot)
-            orders = make_digit_orders(digits, known_spot)
-            solution = check_options(equations, orders)
+            op_placements = build_op_dict(operations, known_spot)
+            templates = place_ops(op_placements.copy(), operations.copy(), known_spot)
+            dig_orders = make_digit_orders(digits, known_spot)
+            solution = check_templates(templates, dig_orders)
             if solution == '':
                 operations[0], operations[1] = operations[1], operations[0]
-                equations = place_ops(options.copy(), operations.copy(), known_spot)
-                solution = check_options(equations, orders)
+                templates = place_ops(op_placements.copy(), operations.copy(), known_spot)
+                solution = check_templates(templates, dig_orders)
         
             message = f"{raw_str} ---> {solution}"
             success = True
