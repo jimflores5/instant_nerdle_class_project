@@ -159,11 +159,16 @@ def make_digit_orders(digits, known):
         if str(digit) == known[1]:
             digits.remove(digit)
     num_digits = len(digits)
-    num_permutations = math.factorial(num_digits) # 4 digits can be arranged 24 different ways. 5 digtis = 120 permutations, and 6 gives 720.
+    if len(digits) == len(set(digits)):
+        num_permutations = math.factorial(num_digits) # 4 digits can be arranged 24 different ways. 5 digtis = 120 permutations, and 6 gives 720.
+    else:
+        num_permutations = math.factorial(num_digits) // math.factorial(1 + len(digits) - len(set(digits)))
     while len(orders) < num_permutations:
         # Eventually, repeated random shuffles generates all possible
         # permutations.
-        # I'm not happy with this approach, but it was quick to code.
+        # I'm not happy with this approach because it only works if there
+        # are not repeated digits.
+        # However, it was quick to code.
         temp_list = digits.copy()
         random.shuffle(temp_list)
         if temp_list not in orders:
