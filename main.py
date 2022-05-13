@@ -10,8 +10,11 @@ def evaluate_equation(equa_str): # This function accepts a string of an equation
     # We need to see if the equation produces this answer!
 
     # Iterate through the list and convert string numbers to integers.
+    # Return False for any string like '031'.
     for index in range(len(parts)):
-        if parts[index].isdigit():
+        if parts[index].isdigit() and parts[index] != str(int(parts[index])):
+            return False
+        elif parts[index].isdigit():
             parts[index] = int(parts[index])
 
     # Solve the equation by following the order of operations.
@@ -162,11 +165,11 @@ def make_digit_orders(digits, known):
     # 'orders' will be a list of lists. Each entry represents one
     # left-to-right arrangement of the puzzle digits.
     orders = []
-    for digit in digits:
-        # If the known postion holds a number, remove that value from
-        # the digits list.
-        if str(digit) == known[1]:
-            digits.remove(digit)
+
+    # If the known postion holds a number, remove that value from
+    # the digits list.
+    if known[1].isdigit() and int(known[1]) in digits:
+        digits.remove(known[1])
     
     # Next, we need to know how many different ways there are to arrange
     # the digits in the puzzle. 4 digits can be arranged 24 different ways.
@@ -280,7 +283,7 @@ def main():
     templates = place_ops(op_placements.copy(), operations.copy(), known_spot)
 
     # Identify all possible left-to-right arrangements of the digits in the puzzle.
-    dig_orders = make_digit_orders(digits, known_spot)
+    dig_orders = make_digit_orders(digits.copy(), known_spot)
 
     # Place the digits into each template, then evaluate the equations.
     solution = check_templates(templates, dig_orders)
