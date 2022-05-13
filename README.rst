@@ -35,10 +35,10 @@ serve as a nice culminating project for your coding class.
 Note
 ^^^^
 
-Python has an ``eval()`` function that can be used to evaluate an
-equation entered as a string (e.g. ``'2 + 3 * 5'``). However, spend time in
-class emphasizing why using ``eval()`` is a BAD idea, since it severely
-compromises the security of the program.
+Python has an ``eval()`` function that will evaluate an equation entered as
+a string (e.g. ``'2 + 3 * 5'``). However, spend time in class emphasizing why
+using ``eval()`` is a BAD idea, since it severely compromises the security
+of the program.
 
 Flask Setup
 -----------
