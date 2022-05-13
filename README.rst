@@ -1,6 +1,8 @@
+# Instant Nerdle Project
+
 Many students are/were into the Wordle fad, and one adaptation of this
 game is Nerdle. Nerdle works just like Wordle, but instead of letters,
-players must arrange numbers and mathematical operators (+-*/) to create
+players must arrange numbers and mathematical operators (`+-*/`) to create
 a true expression (e.g. 9 - 12/4 = 6).
 
 An adaptation to the adaptation is Instant Nerdle 
@@ -16,8 +18,9 @@ identify the goal of the project - to write a program that solves any
 Instant Nerdle puzzle!
 
 Ask your students to brainstorm ideas about what steps their program needs
-to take, the order of execution, how to collect user input, etc.
+to take, the order for those steps, how to collect user input, etc.
 
 **Note**: Python has an `eval()` function that can be used to evaluate an
-equation entered as a string ('2 + 3 * 5'). However, spend time in class
-emphasizing why using `eval()` is a BAD idea in terms of security.
+equation entered as a string (e.g. `'2 + 3 * 5'`). However, spend time in
+class emphasizing why using `eval()` is a BAD idea, since it severely
+compromises the security of the program.
