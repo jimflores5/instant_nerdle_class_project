@@ -15,8 +15,8 @@ a true expression (e.g. ``9 - 12/4 = 6``).
 
 An adaptation to the adaptation is Instant Nerdle 
 (https://instant.nerdlegame.com/). In this case, players know all the
-numbers and operators, but not their correct order. Players only get
-one attempt to enter the correct equation.
+numbers and operators, but not their correct order. Players get one
+attempt to enter the correct equation.
 
 Project
 -------
