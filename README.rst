@@ -47,22 +47,25 @@ This repository provides a rough solution for the project. To run the Flask
 application, you will need to create a virtual environment, activate it,
 and then install Flask.
 
+For this project, I used ``nerdle-env`` as the environment name, which
+matches the first line in the ``.gitignore`` file. Feel free to change
+this as you see fit!
+
 After cloning this repo, use the command line interface to navigate into
-the project folder, then enter the following commands. (Be sure to
-replace ``environment_name`` with a name of your choice).
+the project folder, then enter the following commands.
 
 *Mac*
 
 ::
 
-   python3 -m venv environment_name
-   . environment_name/bin/activate
+   python3 -m venv nerdle-env
+   . nerdle-env/bin/activate
    pip3 install Flask
 
 *Windows (GitBash)*
 
 ::
 
-  py -3 -m venv environment_name
-  . environment_name/Scripts/activate
+  py -3 -m venv nerdle-env
+  . nerdle-env/Scripts/activate
   pip install Flask
