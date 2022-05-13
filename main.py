@@ -88,10 +88,12 @@ def place_ops(op_positions, ops, known):
         # Each entry is a collection of operator positions, like (2, 4, 6).
         template = ''
         op_index = 0
+        if known[1] in ops:
+            ops.remove(known[1])    
 
         # Each equation consists of 8 positions.
         for index in range(8):
-            if index == known[0] and known[1].isdigit():
+            if index == known[0]:
                 # If the known character is a digit, add it to the string.
                 template += known[1]
             elif index in entry:
@@ -102,7 +104,6 @@ def place_ops(op_positions, ops, known):
             else:
                 # Otherwise, add X as a placeholder in the equation.
                 template += 'X'
-
         # Assign the new template to the relevant key in the dictionary.
         op_positions[entry] = template
     return op_positions.copy()
@@ -124,20 +125,28 @@ def build_op_dict(ops, known):
     if known[1] not in '+-*/=':
         # If the known charater is a digit, then its position may
         # remove one or more of the possible operator placements.
-        nix_this_position = known[0]
+        nix_position = True
+        include_position = False
     else:
-        nix_this_position = 0
+        # If the known charater is an operator, then its position
+        # mandates specific placements.
+        nix_position = False
+        include_position = True
         
     if len(ops) == 2:
         # Build a dictionary using the entries of positions_2_ops as keys.
         for option in positions_2_ops:
-            if nix_this_position not in option:
+            if include_position and known[0] in option:
                 # Assign the empty string to each key.
+                op_options[option] = ''
+            elif nix_position and known[0] not in option:
                 op_options[option] = ''
     else:
         # Build a dictionary using the entries of positions_3_ops as keys.
         for option in positions_3_ops:
-            if nix_this_position not in option:
+            if include_position and known[0] in option:
+                op_options[option] = ''
+            elif nix_position and known[0] not in option:
                 op_options[option] = ''
     return op_options.copy()
 
@@ -158,23 +167,50 @@ def make_digit_orders(digits, known):
         # the digits list.
         if str(digit) == known[1]:
             digits.remove(digit)
+    
+    # Next, we need to know how many different ways there are to arrange
+    # the digits in the puzzle. 4 digits can be arranged 24 different ways.
+    # 5 digtis = 120 different ways, and 6 gives 720.
+    # BUT that assumes no number is used more than once.
+    # So, let's check for repeated digits.
+
     num_digits = len(digits)
-    if len(digits) == len(set(digits)):
-        num_permutations = math.factorial(num_digits) # 4 digits can be arranged 24 different ways. 5 digtis = 120 permutations, and 6 gives 720.
+    num_repeats = count_repeats(digits)
+
+    # This if/else statement is overkill. Line 180 works by itself.
+    # However, formatting it this way breaks up the math explanation into
+    # more manageable pieces.
+    if num_repeats == 0:
+        num_permutations = math.factorial(num_digits)  # 5! = 120, etc.
     else:
-        num_permutations = math.factorial(num_digits) // math.factorial(1 + len(digits) - len(set(digits)))
+        # Each repeated digit reduces the number of possible configurations.
+        # The reduction factor is another factorial! (Math folks, there's 
+        # probably a better way. Any tips?)
+        num_permutations = math.factorial(num_digits) // math.factorial(1 + num_repeats) # This reduces to line 175 when num_repeats = 0.
+
     while len(orders) < num_permutations:
-        # Eventually, repeated random shuffles generates all possible
+        # Eventually, repeated random shuffles generate all possible
         # permutations.
-        # I'm not happy with this approach because it only works if there
-        # are not repeated digits.
-        # However, it was quick to code.
+        # I'm not happy with this approach, but it was quick to code.
         temp_list = digits.copy()
         random.shuffle(temp_list)
         if temp_list not in orders:
             orders.append(temp_list.copy())
     orders.sort()
     return copy.deepcopy(orders)
+
+def count_repeats(dig_list):
+    # The 'set()' function creates a collection of unique entries,
+    # which can be used to quickly determine the number of repeated
+    # numbers in dig_list.
+    return len(dig_list) - len(set(dig_list))
+    # Since set() is not discussed in the LCHS curriculum, here's an
+    # alternative that accomplishes the same thing:
+    # temp = []
+    # for digit in dig_list:
+    #   if digit not in temp:
+    #       temp.append(digit)
+    # return len(dig_list) - len(temp) 
 
 def query_user():
     # This function collects the puzzle characters and the known position
@@ -211,7 +247,7 @@ def query_user():
     return raw_data, known_char
 
 def check_templates(templates, orders):
-    # This function fills digits into the prepared templates and evaluates
+    # This function puts digits into the prepared templates and evaluates
     # each resulting equation.
     soln = ''
     for template in templates.values():
