@@ -42,6 +42,7 @@ the project folder, then enter the following commands. (Be sure to
 replace ``environment_name`` with a name of your choice).
 
 *Mac*
+
 ```
 python3 -m venv environment_name
 . environment_name/bin/activate
@@ -49,6 +50,7 @@ pip3 install Flask
 ```
 
 *Windows (GitBash)*
+
 ```
 py -3 -m venv environment_name
 . environment_name/Scripts/activate
