@@ -177,7 +177,7 @@ def make_digit_orders(digits, known):
 
     # If the known postion holds a number, remove that value from
     # the digits list.
-    if known[1].isdigit() and int(known[1]) in digits:
+    if known[1].isdigit() and known[1] in digits:
         digits.remove(known[1])
     
     # Next, we need to know how many different ways there are to arrange
