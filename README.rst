@@ -1,4 +1,5 @@
-# Instant Nerdle Project
+Instant Nerdle Project
+----------------------
 
 Many students are/were into the Wordle fad, and one adaptation of this
 game is Nerdle. Nerdle works just like Wordle, but instead of letters,
