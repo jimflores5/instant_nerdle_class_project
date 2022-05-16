@@ -59,3 +59,11 @@ table
     text-align: center;
     font-size: xx-large;
 }
+
+footer {
+    color: darkgray;
+    text-align: right;
+    font-size: small;
+    margin: 40px 20px;
+    padding: 10 px;
+}
